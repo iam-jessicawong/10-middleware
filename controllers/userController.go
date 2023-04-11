@@ -6,6 +6,7 @@ import (
 	"middleware/helpers"
 	"middleware/models"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,11 +27,20 @@ func Register(c *gin.Context) {
 		c.ShouldBind(&User)
 	}
 
+	// trim space to avoid user input white space
+	User.Email = strings.TrimSpace(User.Email)
+	User.Password = strings.TrimSpace(User.Password)
+	User.FullName = strings.TrimSpace(User.FullName)
+
 	err := db.Debug().Create(&User).Error
 	if err != nil {
+		message := err.Error()
+		if err.Error() == "duplicated key not allowed" {
+			message = "Your email is already registered, please go to login page"
+		}
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Bad Request",
-			"message": err.Error(),
+			"message": message,
 		})
 		return
 	}
